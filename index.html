@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alitas D'Paris - Pedidos</title>
+    <link rel="icon" type="image/jpg" href="https://i.postimg.cc/28xGJLn4/logo.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .product-card { border-radius: 2.5rem; }
+        .active-cat { background: white !important; color: #ea580c !important; font-weight: bold; }
+        .modal-active { display: flex !important; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        #seccion-impresion-final { display: none; }
+
+        @media print {
+            body * { visibility: hidden; height: 0; overflow: hidden; }
+            #seccion-impresion-final, #seccion-impresion-final * { 
+                visibility: visible; 
+                display: block !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            #seccion-impresion-final { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; /* Ocupa todo el ancho de la hoja */
+                display: flex !important; /* Activamos flexbox */
+                justify-content: center !important; /* Centra el ticket horizontalmente */
+                margin: 0;
+                padding: 0;
+            }
+            @page { margin: 0; }
+        }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 pb-32">
+
+    <script>
+        /* ==========================================================
+           SECCIÓN DE CONFIGURACIÓN (AQUÍ CAMBIAS TODO)
+           ========================================================== */
+        const CONFIG = {
+            nombre: "ALITAS D'PARIS",           
+            direccion: "MASCOTA #343, COL. JALISCO, TONALÁ, JALISCO", 
+            horario: "ABIERTO DE 4:00 PM A 11:00 PM",
+            telefono: "3315332223",             
+            whatsapp: "5213315332223",          
+            color: "#ea580c",                   
+            logoUrl: "https://i.postimg.cc/28xGJLn4/logo.jpg", 
+            claveCorte: "Paris2014"                  // <--- CONTRASEÑA AQUÍ
+        };
+        /* ========================================================== */
+
+        const SALSAS_LISTA = ["BBQ", "Búfalo hot", "Búfalo rams", "BBQ ahumado", "Parmesano hot", "Parmesano ajo", "Teriyaki", "Jalapeño", "Chipotle", "Piña hot", "Mango habanero", "Limón Pepe", "Mango dulce", "Habanero con barbecue", "Búfalo especial"];
+
+        const productos = [
+            { id: 1, cat: "ALITAS", nombre: "Orden de Alitas", desc: "6 pzas + aderezo", precio: 135, img: "https://i.postimg.cc/QNBH5vbr/alitas.jpg", tieneSabores: true },
+            { id: 2, cat: "ALITAS", nombre: "Orden de Alitas", desc: "10 pzas + aderezo", precio: 155, img: "https://i.postimg.cc/QNBH5vbr/alitas.jpg", tieneSabores: true },
+            { id: 3, cat: "ALITAS", nombre: "Orden de Alitas", desc: "20 pzas + aderezo", precio: 295, img: "https://i.postimg.cc/QNBH5vbr/alitas.jpg", tieneSabores: true },
+            { id: 4, cat: "ALITAS", nombre: "Orden de Alitas Con Papas", desc: "6 pzas + aderezo", precio: 150, img: "https://i.postimg.cc/QNBH5vbr/alitas.jpg", tieneSabores: true },
+            { id: 5, cat: "ALITAS", nombre: "Orden de Alitas Con Papas", desc: "10 pzas + aderezo", precio: 170, img: "https://i.postimg.cc/QNBH5vbr/alitas.jpg", tieneSabores: true },
+            { id: 6, cat: "ALITAS", nombre: "Orden de Alitas Con Papas", desc: "20 pzas + aderezo", precio: 320, img: "https://i.postimg.cc/QNBH5vbr/alitas.jpg", tieneSabores: true },
+            { id: 7, cat: "PAPAS", nombre: "Papas a la Francesa", desc: "Chicas", precio: 74, img: "https://i.postimg.cc/T2ZJFzYT/papas-a-la-francesa.jpg", tieneSabores: false },
+            { id: 8, cat: "PAPAS", nombre: "Papas a la Francesa", desc: "Medianas", precio: 94, img: "https://i.postimg.cc/T2ZJFzYT/papas-a-la-francesa.jpg", tieneSabores: false },
+            { id: 9, cat: "PAPAS", nombre: "Papas a la Francesa", desc: "Grandes", precio: 119, img: "https://i.postimg.cc/T2ZJFzYT/papas-a-la-francesa.jpg", tieneSabores: false },
+            { id: 10, cat: "PAPAS", nombre: "Papas a la Francesa con Salchipulpos", desc: "Chicas", precio: 74, img: "https://i.postimg.cc/pXSbwX5n/ppas-con-salchipulpos.jpg", tieneSabores: false },
+            { id: 11, cat: "PAPAS", nombre: "Papas a la Francesa con Salchipulpos", desc: "Medianas", precio: 94, img: "https://i.postimg.cc/pXSbwX5n/ppas-con-salchipulpos.jpg", tieneSabores: false },
+            { id: 12, cat: "PAPAS", nombre: "Papas a la Francesa con Salchipulpos", desc: "Grandes", precio: 119, img: "https://i.postimg.cc/pXSbwX5n/ppas-con-salchipulpos.jpg", tieneSabores: false },
+            { id: 13, cat: "PAPAS", nombre: "Papas Gajo", desc: "", precio: 90, img: "https://i.postimg.cc/xC8PVYzQ/papas-gajo.jpg", tieneSabores: false },
+            { id: 14, cat: "PAPAS", nombre: "Papas París", desc: "", precio: 90, img: "https://i.postimg.cc/43SWdmZQ/papas-paris.jpg", tieneSabores: false },
+            { id: 15, cat: "PAPAS", nombre: "Papas Curly", desc: "", precio: 90, img: "https://i.postimg.cc/43SWdmZQ/papas-paris.jpg", tieneSabores: false },
+            { id: 16, cat: "PAPAS", nombre: "Salchitacos", desc: "Chicos", precio: 84, img: "https://i.postimg.cc/pdH2SX3S/salchitacos.jpg", tieneSabores: false },
+            { id: 17, cat: "PAPAS", nombre: "Salchitacos", desc: "Medianos", precio: 110, img: "https://i.postimg.cc/pdH2SX3S/salchitacos.jpg", tieneSabores: false },
+            { id: 18, cat: "PAPAS", nombre: "Salchitacos", desc: "Grandes", precio: 129, img: "https://i.postimg.cc/pdH2SX3S/salchitacos.jpg", tieneSabores: false },
+            { id: 19, cat: "MAS SNACK", nombre: "Boneless", desc: "", precio: 159, img: "https://i.postimg.cc/GtQgMx8g/boneless.jpg", tieneSabores: true },
+            { id: 20, cat: "MAS SNACK", nombre: "Boneless con Papas", desc: "", precio: 179, img: "https://i.postimg.cc/DzJD2GDR/boneless-con-papas.jpg", tieneSabores: true },
+            { id: 21, cat: "MAS SNACK", nombre: "Costilla", desc: "", precio: 159, img: "https://i.postimg.cc/P5h14v11/costillas.jpg", tieneSabores: false },
+            { id: 22, cat: "MAS SNACK", nombre: "Costilla con Papas", desc: "", precio: 179, img: "https://i.postimg.cc/fL3dLchk/costilla-con-papas.jpg", tieneSabores: false },
+            { id: 23, cat: "MAS SNACK", nombre: "Palomitas de Pollo", desc: "", precio: 85, img: "https://i.postimg.cc/hGYJHX7W/palomitas-de-pollo.jpg", tieneSabores: false },
+            { id: 24, cat: "MAS SNACK", nombre: "Palomitas de Pollo con Papas", desc: "", precio: 120, img: "https://i.postimg.cc/76vH3022/palomitas-de-pollo-con-papas.jpg", tieneSabores: false },
+            { id: 25, cat: "MAS SNACK", nombre: "Palomitas Mix", desc: "", precio: 349, img: "https://i.postimg.cc/8CvDzcnq/paloma-mix.jpg", tieneSabores: false },
+            { id: 26, cat: "MAS SNACK", nombre: "Pechuga de pollo", desc: "a la manteqilla con hierbas finas", precio: 180, img: "https://i.postimg.cc/8CvDzcnq/paloma-mix.jpg", tieneSabores: false },
+            { id: 27, cat: "MAS SNACK", nombre: "Salchitacos Individuales", desc: "", precio: 14, img: "https://i.postimg.cc/dQyWNdZH/salchitaco.jpg", tieneSabores: false },
+            { id: 28, cat: "MAS SNACK", nombre: "Nachos", desc: "", precio: 90, img: "https://i.postimg.cc/SKPrDNSC/nachos.jpg", tieneSabores: false },
+            { id: 29, cat: "MAS SNACK", nombre: "Aros de Cebolla", desc: "", precio: 80, img: "https://i.postimg.cc/s2MPQdpm/aros-de-cebolla.jpg", tieneSabores: false },
+            { id: 30, cat: "MAS SNACK", nombre: "Dedos de Queso", desc: "", precio: 90, img: "https://i.postimg.cc/rsN5X8kw/dedos-de-queso.jpg", tieneSabores: false },
+            { id: 31, cat: "MAS SNACK", nombre: "Nugget", desc: "", precio: 68, img: "https://i.postimg.cc/kGqtykbr/Nuggets-Pollo.jpg", tieneSabores: false },
+	    { id: 32, cat: "HAMBURGUESAS", nombre: "Hamburguesa de Res", desc: "", precio: 80, img: "https://i.postimg.cc/pL7fbW7V/hamburguesa-de-res.jpg", tieneSabores: false },
+	    { id: 33, cat: "HAMBURGUESAS", nombre: "Hamburguesa de Res con Papas", desc: "", precio: 95, img: "https://i.postimg.cc/T1YL5FSk/hamburguesa-de-res-con-papas.jpg", tieneSabores: false },
+	    { id: 34, cat: "HAMBURGUESAS", nombre: "Hamburguesa sencilla de Pollo", desc: "", precio: 80, img: "https://i.postimg.cc/63zTKzqx/hamburguesa-de-pollo.jpg", tieneSabores: false },
+	    { id: 35, cat: "HAMBURGUESAS", nombre: "Hamburguesa sencilla de Pollo con Papas", desc: "", precio: 95, img: "https://i.postimg.cc/3w130NTy/hamburguesa-de-pollo-con-papas.jpg", tieneSabores: false },
+	    { id: 36, cat: "HAMBURGUESAS", nombre: "Hamburguesa Boneless", desc: "", precio: 120, img: "https://i.postimg.cc/GmQpGqFV/hamburguesa-boneless.jpg", tieneSabores: false },
+	    { id: 37, cat: "HAMBURGUESAS", nombre: "Hamburguesa BBQ", desc: "", precio: 120, img: "https://i.postimg.cc/hP84Rp5T/hamburguesa-bbq.jpg", tieneSabores: false },
+	    { id: 38, cat: "HAMBURGUESAS", nombre: "Hamburguesa Especial", desc: "Carne tipo Sirloin acompañado con tocino, champiñones, piña, pepinillo, jitomate, cebolla, lechuga y chile", precio: 120, img: "https://i.postimg.cc/hP84Rp5T/hamburguesa-bbq.jpg", tieneSabores: false },
+	    { id: 39, cat: "HAMBURGUESAS", nombre: "Hamburguesa Jalapeño", desc: "Elaborada con pechuga de jalapeño, ya viene impregnada la salsa en el pollo ", precio: 120, img: "https://i.postimg.cc/hP84Rp5T/hamburguesa-bbq.jpg", tieneSabores: false },
+	    { id: 40, cat: "HAMBURGUESAS", nombre: "6 K-Tiras", desc: "", precio: 220, img: "https://i.postimg.cc/ZRJ1kzC6/6-K-TIRAS.png", tieneSabores: false },
+	    { id: 41, cat: "HAMBURGUESAS", nombre: "9 K-Tiras", desc: "", precio: 310, img: "https://i.postimg.cc/3xKSJFK8/9-K-TIRAS.png", tieneSabores: false },
+	    { id: 42, cat: "COMBOS", nombre: "Pareja París", desc: "*10 alitas *1 orden de boneless *1 orden de papas gajo, vegetales *2 bebidas (Jugo Boing)", precio: 420, img: "https://i.postimg.cc/44bRtc5q/pareja-paris.jpg", tieneSabores: false },
+	    { id: 43, cat: "COMBOS", nombre: "Mega París", desc: "20 alitas, costillas, dedos de queso, aros de cebolla, papas a la francesa, nugget, boneless y vegetales.", precio: 899, img: "https://i.postimg.cc/wj5NY0cB/mega-paris.jpg", tieneSabores: false },
+	    { id: 44, cat: "COMBOS", nombre: "Gran París", desc: "20 alitas, nugget, boneless, vegetales, salchipulpos, aros de cebolla y papas a la francesa. (porciones completas).", precio: 720, img: "https://i.postimg.cc/y8nFSLg6/gran-paris.jpg", tieneSabores: false },
+	    { id: 45, cat: "COMBOS", nombre: "Paloma Mix", desc: "5 alitas, 4 boneless, papas parís, nuggets, salchipulpos, salchitacos.", precio: 720, img: "https://i.postimg.cc/cLDnJ62f/paloma-mix.jpg", tieneSabores: false },
+	    { id: 46, cat: "BEBIDAS", nombre: "Arizona", desc: "", precio: 35, img: "https://i.postimg.cc/P5Nq2y3B/arizona.jpg", tieneSabores: false },
+	    { id: 47, cat: "BEBIDAS", nombre: "Coca-Cola Taparrosca", desc: "", precio: 28, img: "https://i.postimg.cc/FsCrdcrG/coca.jpg", tieneSabores: false },
+	    { id: 48, cat: "BEBIDAS", nombre: "Jugo Boing", desc: "1/2 L.", precio: 28, img: "https://i.postimg.cc/90M3C87w/jugo-boing.jpg", tieneSabores: false },
+	    { id: 49, cat: "BEBIDAS", nombre: "Tonicol", desc: "", precio: 28, img: "https://i.postimg.cc/PxSc3WRN/tonicol.jpg", tieneSabores: false },
+	    { id: 50, cat: "BEBIDAS", nombre: "Sangría", desc: "", precio: 28, img: "https://i.postimg.cc/cCVF2XMZ/sangria.jpg", tieneSabores: false },
+
+        ];
+
+        let salsasSeleccionadasTemp = {}; 
+        let carrito = [];
+        let catActual = 'TODOS';
+    </script>
+
+    <header class="text-white p-8 pb-12 text-center rounded-b-[3rem] shadow-xl relative" id="header-main">
+        <div class="max-w-4xl mx-auto">
+            <div class="w-24 h-24 bg-black rounded-full border-4 border-white/20 overflow-hidden shadow-2xl mx-auto mb-4">
+                <img id="logo-img" src="" class="w-full h-full object-cover"> 
+            </div>
+            <h1 class="text-2xl md:text-4xl font-black uppercase italic" id="view-nombre"></h1>
+            <p class="text-[10px] md:text-xs opacity-90 mt-1 italic" id="view-dir"></p>
+            <div class="mt-4">
+                <button onclick="verCorte()" class="bg-white/10 hover:bg-white/30 p-3 rounded-full transition-all border border-white/10 shadow-lg">
+                    <i class="fas fa-lock text-white text-sm"></i>
+                </button>
+            </div>
+            <div class="flex justify-start md:justify-center gap-2 mt-8 overflow-x-auto no-scrollbar px-4 py-2">
+    <button onclick="filtrar('TODOS')" id="cat-TODOS" class="active-cat whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">TODOS</button>
+    <button onclick="filtrar('ALITAS')" id="cat-ALITAS" class="whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">ALITAS</button>
+    <button onclick="filtrar('PAPAS')" id="cat-PAPAS" class="whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">PAPAS</button>
+    <button onclick="filtrar('MAS SNACK')" id="cat-MAS SNACK" class="whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">MAS SNACK</button>
+    <button onclick="filtrar('HAMBURGUESAS')" id="cat-HAMBURGUESAS" class="whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">HAMBURGUESAS</button>
+    <button onclick="filtrar('COMBOS')" id="cat-COMBOS" class="whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">COMBOS</button>
+    <button onclick="filtrar('BEBIDAS')" id="cat-BEBIDAS" class="whitespace-nowrap px-6 py-2 rounded-full text-[11px] border border-white/20 bg-black/10 transition-all">BEBIDAS</button>
+</div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 -mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="menu-container"></main>
+
+    <div id="cart-bar" class="fixed bottom-0 left-0 w-full bg-white p-6 z-40 hidden border-t rounded-t-[2.5rem] shadow-2xl">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div onclick="abrirModal()">
+                <p class="text-[10px] text-gray-400 font-bold uppercase">Total Acumulado</p>
+                <p class="text-4xl font-black text-gray-800" id="total-price">$0</p>
+            </div>
+            <button onclick="abrirModal()" class="text-white font-black py-4 px-10 rounded-2xl shadow-lg uppercase italic" id="btn-revisar"> REVISAR </button>
+        </div>
+    </div>
+
+    <div id="modal-carrito" class="fixed inset-0 bg-black/80 z-50 hidden items-end justify-center">
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black italic text-gray-800 uppercase">Tu Pedido</h2>
+                <button onclick="cerrarModal()" class="text-gray-300 text-3xl"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <div class="space-y-3 mb-6">
+                <input type="text" id="c-nombre" placeholder="TU NOMBRE" class="w-full p-4 bg-gray-50 rounded-2xl border-none text-sm font-bold uppercase shadow-inner">
+                <input type="text" id="c-dir" placeholder="DOMICILIO (VACÍO SI RECOGE)" class="w-full p-4 bg-gray-50 rounded-2xl border-none text-sm font-bold uppercase shadow-inner">
+            </div>
+            <div id="lista-carrito" class="space-y-4 mb-8"></div>
+            <div class="border-t pt-6 space-y-4">
+                <div class="flex justify-between text-3xl font-black italic">
+                    <span>TOTAL:</span>
+                    <span id="total-modal"></span>
+                </div>
+                <button onclick="registrarYImprimir()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 shadow-xl uppercase italic">
+                    <i class="fas fa-print"></i> Registrar e Imprimir Comanda
+                </button>
+                <button onclick="enviarPedido()" class="w-full bg-green-500 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 shadow-xl uppercase italic">
+                    <i class="fab fa-whatsapp text-xl"></i> Enviar por WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-corte" class="fixed inset-0 bg-black/90 z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl overflow-y-auto max-h-[95vh]">
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-black italic uppercase">Corte del Día</h2>
+                <p class="text-[10px] font-bold text-gray-400" id="fecha-corte"></p>
+            </div>
+            <div id="corte-detalle" class="space-y-4 mb-6 border-y py-4 text-xs"></div>
+            <div class="text-2xl font-black text-right mb-6 italic" id="corte-total"></div>
+            <div class="flex flex-col gap-2 no-print">
+                <button onclick="mandarImprimirCorte()" class="bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fas fa-print"></i> Imprimir Reporte Detallado
+                </button>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <button onclick="cerrarCorte()" class="bg-gray-200 py-3 rounded-xl font-bold uppercase text-xs">Cerrar</button>
+                    <button onclick="limpiarVentas()" class="bg-red-500 text-white py-3 rounded-xl font-bold uppercase text-xs">Borrar Todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="seccion-impresion-final"></div>
+
+    <script>
+        // CARGA INICIAL
+        function cargarConfig() {
+            document.getElementById('header-main').style.backgroundColor = CONFIG.color;
+            document.getElementById('btn-revisar').style.backgroundColor = CONFIG.color;
+            document.getElementById('logo-img').src = CONFIG.logoUrl;
+            document.getElementById('view-nombre').innerText = CONFIG.nombre;
+            document.getElementById('view-dir').innerText = CONFIG.direccion;
+        }
+
+        // LÓGICA DE FILTRADO Y MENÚ
+        function filtrar(c) {
+            catActual = c;
+            document.querySelectorAll('header button').forEach(b => b.classList.remove('active-cat'));
+            const btn = document.getElementById(`cat-${c}`);
+            if(btn) btn.classList.add('active-cat');
+            renderMenu();
+        }
+
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = "";
+            const filtrados = catActual === 'TODOS' ? productos : productos.filter(p => p.cat === catActual);
+            filtrados.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 product-card shadow-sm border border-gray-50 flex flex-col gap-4";
+                let saboresUI = prod.tieneSabores ? `
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <select onchange="seleccionarSalsa(${prod.id}, this.value)" class="w-full bg-white border border-gray-200 rounded-xl p-3 text-xs font-bold uppercase outline-none">
+                            <option value="">Elegir salsa...</option>
+                            ${SALSAS_LISTA.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                        <div id="tags-salsas-${prod.id}" class="flex flex-wrap gap-2 mt-3"></div>
+                    </div>` : "";
+                card.innerHTML = `<div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden border">
+                            <img src="${prod.img}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-black text-gray-800 text-sm italic uppercase">${prod.nombre}</h3>
+                            <p class="text-[10px] text-gray-400 font-bold">${prod.desc}</p>
+                            <p class="font-black text-xl mt-1 italic" style="color:${CONFIG.color}">$${prod.precio}</p>
+                        </div>
+                        <button onclick="agregar(${prod.id})" class="text-white w-14 h-14 rounded-[1.5rem] flex items-center justify-center shadow-lg active:scale-90" style="background-color:${CONFIG.color}">
+                            <i class="fas fa-plus text-xl"></i>
+                        </button>
+                    </div>${saboresUI}`;
+                container.appendChild(card);
+            });
+        }
+
+        function seleccionarSalsa(prodId, valor) {
+            if (!valor) return;
+            if (!salsasSeleccionadasTemp[prodId]) salsasSeleccionadasTemp[prodId] = [];
+            if (!salsasSeleccionadasTemp[prodId].includes(valor)) {
+                salsasSeleccionadasTemp[prodId].push(valor);
+                actualizarTagsSalsas(prodId);
+            }
+        }
+
+        function actualizarTagsSalsas(prodId) {
+            const container = document.getElementById(`tags-salsas-${prodId}`);
+            if(!container) return;
+            container.innerHTML = "";
+            (salsasSeleccionadasTemp[prodId] || []).forEach(s => {
+                const tag = document.createElement('span');
+                tag.className = "bg-white border text-[9px] font-bold px-3 py-1 rounded-full flex items-center gap-2 shadow-sm italic";
+                tag.style.color = CONFIG.color; tag.style.borderColor = CONFIG.color;
+                tag.innerHTML = `${s.toUpperCase()} <i class="fas fa-times cursor-pointer" onclick="quitarSalsaTemp(${prodId}, '${s}')"></i>`;
+                container.appendChild(tag);
+            });
+        }
+
+        function quitarSalsaTemp(prodId, valor) {
+            salsasSeleccionadasTemp[prodId] = salsasSeleccionadasTemp[prodId].filter(s => s !== valor);
+            actualizarTagsSalsas(prodId);
+        }
+
+        function agregar(id) {
+            const prod = productos.find(p => p.id === id);
+            let salsasFinales = null;
+            if (prod.tieneSabores) {
+                if (!salsasSeleccionadasTemp[id] || salsasSeleccionadasTemp[id].length === 0) return alert("ELIGE AL MENOS UNA SALSA");
+                salsasFinales = salsasSeleccionadasTemp[id].join(", ");
+            }
+            const index = carrito.findIndex(item => item.id === id && item.sabor === salsasFinales);
+            if (index > -1) { carrito[index].cant++; } 
+            else { carrito.push({ ...prod, sabor: salsasFinales, cant: 1 }); }
+            if(prod.tieneSabores) { salsasSeleccionadasTemp[id] = []; actualizarTagsSalsas(id); }
+            actualizarBarra();
+        }
+
+        function actualizarBarra() {
+            const total = carrito.reduce((s, i) => s + (i.precio * i.cant), 0);
+            document.getElementById('total-price').innerText = `$${total}`;
+            document.getElementById('cart-bar').style.display = total > 0 ? 'block' : 'none';
+        }
+
+        function abrirModal() {
+            const lista = document.getElementById('lista-carrito');
+            lista.innerHTML = "";
+            let total = 0;
+            carrito.forEach((item, i) => {
+                const sub = item.precio * item.cant;
+                total += sub;
+                lista.innerHTML += `
+                    <div class="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex justify-between items-center shadow-sm">
+                        <div class="flex-1">
+                            <p class="font-black text-gray-800 text-xs uppercase italic">${item.cant}x ${item.nombre}</p>
+                            ${item.sabor ? `<p class="text-[9px] font-bold uppercase mt-1 italic" style="color:${CONFIG.color}">${item.sabor}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-black text-gray-800 text-sm italic">$${sub}</span>
+                            <button onclick="quitar(${i})" class="text-red-400 text-xl"><i class="fas fa-minus-circle"></i></button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('total-modal').innerText = `$${total}`;
+            document.getElementById('total-modal').style.color = CONFIG.color;
+            document.getElementById('modal-carrito').classList.add('modal-active');
+        }
+
+        function quitar(index) {
+            if(carrito[index].cant > 1) { carrito[index].cant--; } 
+            else { carrito.splice(index, 1); }
+            if (carrito.length === 0) cerrarModal();
+            abrirModal();
+            actualizarBarra();
+        }
+
+        function cerrarModal() { document.getElementById('modal-carrito').classList.remove('modal-active'); }
+
+        // GESTIÓN DE VENTAS Y LOCALSTORAGE
+        function registrarVenta(nombre, domicilio, total, detalleTexto) {
+            let folio = parseInt(localStorage.getItem('folio_paris') || "0");
+            let nuevoFolio = folio + 100;
+            localStorage.setItem('folio_paris', nuevoFolio);
+
+            let historial = JSON.parse(localStorage.getItem('ventas_dia') || "[]");
+            let nuevaVenta = { 
+                folio: nuevoFolio, 
+                cliente: nombre.toUpperCase(), 
+                total: total, 
+                detalle: detalleTexto, 
+                domicilio: domicilio.toUpperCase(),
+                items: JSON.parse(JSON.stringify(carrito)),
+                fecha: new Date().toLocaleDateString(),
+                hora: new Date().toLocaleTimeString()
+            };
+            historial.push(nuevaVenta);
+            localStorage.setItem('ventas_dia', JSON.stringify(historial));
+            return nuevaVenta;
+        }
+
+        function registrarYImprimir() {
+            const n = document.getElementById('c-nombre').value || "MOSTRADOR";
+            const d = document.getElementById('c-dir').value || "RECOGE EN LOCAL";
+            let total = carrito.reduce((s, i) => s + (i.precio * i.cant), 0);
+            let detalleTexto = carrito.map(i => `${i.cant}x ${i.nombre}`).join(" | ");
+            const venta = registrarVenta(n, d, total, detalleTexto);
+            imprimirTicketVenta(venta);
+            carrito = []; actualizarBarra(); cerrarModal();
+        }
+
+        function enviarPedido() {
+            const n = document.getElementById('c-nombre').value;
+            const d = document.getElementById('c-dir').value;
+            if(!n) return alert("ESCRIBE TU NOMBRE");
+            let total = carrito.reduce((s, i) => s + (i.precio * i.cant), 0);
+            let detalleTexto = carrito.map(i => `${i.cant}x ${i.nombre}`).join(" | ");
+            const venta = registrarVenta(n, d, total, detalleTexto);
+            let msg = `*PEDIDO #${venta.folio}*\n👤 *CLIENTE:* ${venta.cliente}\n📍 *ENTREGA:* ${venta.domicilio}\n------------------------------\n`;
+            carrito.forEach(item => {
+                msg += `✅ *${item.cant}x* ${item.nombre}\n${item.sabor ? '   _Salsas: '+item.sabor+'_\n' : ''}   Sub: $${item.precio * item.cant}\n\n`;
+            });
+            msg += `------------------------------\n*TOTAL: $${total}.00*`;
+            window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`);
+            carrito = []; actualizarBarra(); cerrarModal();
+        }
+
+        // FUNCIONES DE IMPRESIÓN
+        function imprimirTicketVenta(v) {
+            let itemsHtml = v.items.map(i => `
+                <div style="font-size:11px; border-bottom:1px dashed #ccc; padding:2px 0;">
+                    ${i.cant}x ${i.nombre} <br>
+                    ${i.sabor ? '<small>Salsas: ' + i.sabor + '</small>' : ''}
+                </div>
+            `).join('');
+            document.getElementById('seccion-impresion-final').innerHTML = `
+                <div style="width:50mm; font-family:monospace; text-align:center; padding:10px;">
+                    <b style="font-size:14px;">${CONFIG.nombre}</b><br>
+                    <span style="font-size:10px;">${v.fecha} ${v.hora}</span><br>
+                    <b>FOLIO: #${v.folio}</b><br>
+                    ----------------------------<br>
+                    <div style="text-align:left; font-size:11px;">
+                        CLIENTE: ${v.cliente}<br>
+                        ENTREGA: ${v.domicilio}<br>
+                    </div>
+                    ----------------------------<br>
+                    ${itemsHtml}
+                    <div style="text-align:right; font-size:12px; margin-top:5px;"><b>TOTAL: $${v.total}.00</b></div><br>
+                    <span style="font-size:9px;">¡GRACIAS POR SU COMPRA!</span>
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 150);
+        }
+
+        function imprimirExistente(index) {
+            let historial = JSON.parse(localStorage.getItem('ventas_dia') || "[]");
+            imprimirTicketVenta(historial[index]);
+        }
+
+        function mandarImprimirCorte() {
+            let historial = JSON.parse(localStorage.getItem('ventas_dia') || "[]");
+            let t = 0;
+            let listaVentas = historial.map(v => {
+                t += v.total;
+                // Generar el detalle de productos para este folio
+                let itemsList = v.items.map(it => ` - ${it.cant} ${it.nombre}`).join('<br>');
+                return `<div style="text-align:left; border-bottom:1px solid #000; padding:4px 0;">
+                            <b>#${v.folio} - ${v.cliente}</b> ($${v.total})<br>
+                            <div style="font-size:9px; color:#333; padding-left:5px;">${itemsList}</div>
+                        </div>`;
+            }).join('');
+
+            document.getElementById('seccion-impresion-final').innerHTML = `
+                <div style="width:50mm; font-family:monospace; text-align:center; padding:10px;">
+                    <b>REPORTE DETALLADO</b><br>
+                    ${CONFIG.nombre}<br>
+                    FECHA: ${new Date().toLocaleDateString()}<br>
+                    ----------------------------<br>
+                    ${listaVentas}
+                    <br>
+                    <div style="text-align:right; font-size:13px;">
+                        <b>TOTAL DÍA: $${t}.00</b>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 150);
+        }
+
+        // CORTE Y SEGURIDAD
+        function verCorte() {
+            let pass = prompt("INTRODUCE LA CONTRASEÑA:");
+            if (pass === CONFIG.claveCorte) {
+                let historial = JSON.parse(localStorage.getItem('ventas_dia') || "[]");
+                let detalle = document.getElementById('corte-detalle');
+                let t = 0;
+                document.getElementById('fecha-corte').innerText = new Date().toLocaleString();
+                detalle.innerHTML = historial.length > 0 ? "" : "SIN VENTAS HOY.";
+                historial.forEach((v, i) => {
+                    detalle.innerHTML += `
+                        <div class="border-b pb-2 flex justify-between items-center">
+                            <div class="flex-1">
+                                <div class="flex justify-between font-black text-xs uppercase italic">
+                                    <span>#${v.folio} - ${v.cliente}</span>
+                                    <span>$${v.total}</span>
+                                </div>
+                                <p class="text-[9px] text-gray-500 uppercase font-bold">${v.detalle}</p>
+                            </div>
+                            <button onclick="imprimirExistente(${i})" class="ml-4 text-blue-500 text-lg p-2"><i class="fas fa-print"></i></button>
+                        </div>`;
+                    t += v.total;
+                });
+                document.getElementById('corte-total').innerText = `TOTAL DÍA: $${t}`;
+                document.getElementById('modal-corte').style.display = 'flex';
+            } else if(pass !== null) { alert("ERROR"); }
+        }
+
+        function cerrarCorte() { document.getElementById('modal-corte').style.display = 'none'; }
+        function limpiarVentas() {
+            if(confirm("¿BORRAR TODA LA VENTA DEL DÍA?")) {
+                localStorage.setItem('ventas_dia', "[]");
+                localStorage.setItem('folio_paris', "0");
+                verCorte();
+            }
+        }
+
+        cargarConfig();
+        filtrar('TODOS');
+    </script>
+</body>
+</html>
